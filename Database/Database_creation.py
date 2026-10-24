@@ -8,6 +8,7 @@ from sqlalchemy import (
     Numeric,
     SmallInteger,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -80,10 +81,14 @@ class Title(Base):
 
     title_surr_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     manga_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("Manga.manga_surr_id"), unique=True
+        Integer, ForeignKey("Manga.manga_surr_id")
     )
-    title_name: Mapped[str | None] = mapped_column(Text, unique=True)
+    title_name: Mapped[str | None] = mapped_column(Text)
     is_prime: Mapped[bool | None] = mapped_column(Boolean)
+
+    __table_args__ = (
+        UniqueConstraint("manga_id", "title_name", name="uq_manga_title"),
+    )
 
 
 class Cover(Base):
@@ -93,9 +98,9 @@ class Cover(Base):
         Integer, ForeignKey("Manga.manga_surr_id"), primary_key=True
     )
     src_id: Mapped[int | None] = mapped_column(
-        SmallInteger, ForeignKey("Source.source_surr_id"), unique=True
+        SmallInteger, ForeignKey("Source.source_surr_id"), primary_key=True
     )
-    volume: Mapped[str | None] = mapped_column(Text, unique=True)
+    volume: Mapped[str | None] = mapped_column(Text, primary_key=True)
     cover_src_id: Mapped[str | None] = mapped_column(Text)
     cover_location: Mapped[str | None] = mapped_column(Text)
     cover_link: Mapped[str | None] = mapped_column(Text)
@@ -106,13 +111,15 @@ class Chapter(Base):
 
     chapter_surr_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     manga_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("Manga.manga_surr_id"), unique=True
+        Integer, ForeignKey("Manga.manga_surr_id")
     )
-    chapter_number: Mapped[float | None] = mapped_column(
-        Numeric(8, 2), unique=True
-    )
+    chapter_number: Mapped[float | None] = mapped_column(Numeric(8, 2))
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     chapter_title: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        UniqueConstraint("manga_id", "chapter_number", name="uq_manga_chapter_number"),
+    )
 
 
 class MangaTag(Base):
@@ -135,9 +142,13 @@ class MangaSources(Base):
     src_id: Mapped[int] = mapped_column(
         SmallInteger, ForeignKey("Source.source_surr_id"), primary_key=True
     )
-    manga_src_id: Mapped[str | None] = mapped_column(Text, unique=True)
+    manga_src_id: Mapped[str | None] = mapped_column(Text)
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     manga_link: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        UniqueConstraint("src_id", "manga_src_id", name="uq_source_manga_src_id"),
+    )
 
 
 class ChapterSources(Base):
@@ -147,13 +158,17 @@ class ChapterSources(Base):
         BigInteger, ForeignKey("Chapter.chapter_surr_id"), primary_key=True
     )
     src_id: Mapped[int] = mapped_column(
-        SmallInteger, ForeignKey("Source.source_surr_id"), primary_key=True, unique=True
+        SmallInteger, ForeignKey("Source.source_surr_id"), primary_key=True
     )
-    chapter_src_id: Mapped[str | None] = mapped_column(Text, unique=True)
+    chapter_src_id: Mapped[str | None] = mapped_column(Text)
     chapter_location: Mapped[str | None] = mapped_column(Text)
     chapter_link: Mapped[str | None] = mapped_column(Text)
     pages_count: Mapped[int | None] = mapped_column(SmallInteger)
     is_downloaded: Mapped[bool | None] = mapped_column(Boolean)
+
+    __table_args__ = (
+        UniqueConstraint("src_id", "chapter_src_id", name="uq_source_chapter_src_id"),
+    )
 
 
 class MangaCreators(Base):
