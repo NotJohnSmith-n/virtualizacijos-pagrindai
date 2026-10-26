@@ -1,4 +1,8 @@
+import httpx
+import os
+from datetime import datetime, timezone
 from datetime import datetime
+import time
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -8,9 +12,10 @@ from sqlalchemy import (
     Numeric,
     SmallInteger,
     Text,
-    UniqueConstraint,
+    UniqueConstraint, create_engine, text
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
+from sqlalchemy.dialects.postgresql import insert
 
 
 class Base(DeclarativeBase):
@@ -20,23 +25,15 @@ class Base(DeclarativeBase):
 class Language(Base):
     __tablename__ = "Language"
 
-    language_surr_id: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
+    language_surr_id: Mapped[int] = mapped_column(SmallInteger, primary_key=True, autoincrement=True)
     language_code: Mapped[str | None] = mapped_column(Text, unique=True)
-    language_name: Mapped[str | None] = mapped_column(Text, unique=True)
-
-
-class ContentRanting(Base):
-    __tablename__ = "Content_Ranting"
-
-    content_rating_surr_id: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
-    content_rating: Mapped[str | None] = mapped_column(Text, unique=True)
-    description: Mapped[str | None] = mapped_column(Text)
+    language_name: Mapped[str | None] = mapped_column(Text)
 
 
 class Source(Base):
     __tablename__ = "Source"
 
-    source_surr_id: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
+    source_surr_id: Mapped[int] = mapped_column(SmallInteger, primary_key=True, autoincrement=True)
     source_name: Mapped[str | None] = mapped_column(Text, unique=True)
     source_rank: Mapped[int | None] = mapped_column(SmallInteger)
 
@@ -44,7 +41,7 @@ class Source(Base):
 class Tag(Base):
     __tablename__ = "Tag"
 
-    tag_surr_id: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
+    tag_surr_id: Mapped[int] = mapped_column(SmallInteger, primary_key=True, autoincrement=True)
     tag_name: Mapped[str | None] = mapped_column(Text, unique=True)
     tag_description: Mapped[str | None] = mapped_column(Text)
     is_adult: Mapped[bool | None] = mapped_column(Boolean)
@@ -53,7 +50,7 @@ class Tag(Base):
 class Creators(Base):
     __tablename__ = "Creators"
 
-    creator_surr_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    creator_surr_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     creator_name: Mapped[str | None] = mapped_column(Text)
     creator_anilist_id: Mapped[str | None] = mapped_column(Text, unique=True)
 
@@ -61,15 +58,13 @@ class Creators(Base):
 class Manga(Base):
     __tablename__ = "Manga"
 
-    manga_surr_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    manga_surr_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     manga_release_year: Mapped[int | None] = mapped_column(Integer)
     manga_description: Mapped[str | None] = mapped_column(Text)
-    content_rating_id: Mapped[int | None] = mapped_column(
-        SmallInteger, ForeignKey("Content_Ranting.content_rating_surr_id")
-    )
     anilist_id: Mapped[str | None] = mapped_column(Text, unique=True)
-    my_anime_list_id: Mapped[str | None] = mapped_column(Text, unique=True)
+    # my_anime_list_id: Mapped[str | None] = mapped_column(Text, unique=True)
     is_completed: Mapped[bool | None] = mapped_column(Boolean)
+    is_adult: Mapped[bool | None] = mapped_column(Boolean)
     last_updated: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     manga_original_language_id: Mapped[int | None] = mapped_column(
         SmallInteger, ForeignKey("Language.language_surr_id")
@@ -79,7 +74,7 @@ class Manga(Base):
 class Title(Base):
     __tablename__ = "Title"
 
-    title_surr_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title_surr_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     manga_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("Manga.manga_surr_id")
     )
@@ -109,7 +104,7 @@ class Cover(Base):
 class Chapter(Base):
     __tablename__ = "Chapter"
 
-    chapter_surr_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    chapter_surr_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     manga_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("Manga.manga_surr_id")
     )
@@ -131,6 +126,7 @@ class MangaTag(Base):
     tag_id: Mapped[int] = mapped_column(
         SmallInteger, ForeignKey("Tag.tag_surr_id"), primary_key=True
     )
+
 
 
 class MangaSources(Base):
@@ -181,3 +177,21 @@ class MangaCreators(Base):
         Integer, ForeignKey("Creators.creator_surr_id"), primary_key=True
     )
     role: Mapped[str] = mapped_column(Text, primary_key=True)
+
+DATABASE_URL = os.environ["DATABASE_URL"]
+
+engine = create_engine(DATABASE_URL)
+
+if __name__ == "__main__":
+    Base.metadata.create_all(engine)
+    print("Tables created successfully.")
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres
+    env_file:
+      postgres-cred.env
+    volumes:
+      - pgdata:/var/lib/postgresql
+
+
+
+  scraper:
+    build: ./Scraper
+    env_file:
+      - ./postgres-cred.env
+    depends_on:
+      - db
+    command: sh -c "sleep 5 && python Main.py"
+
+
+
+volumes:
+  pgdata:
